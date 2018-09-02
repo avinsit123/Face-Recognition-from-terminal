@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Sep  1 23:42:00 2018
+
+@author: r17935avinash
+"""
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+import pickle
+import face_recognition
+import sys
+import os
+
+
+image_encoding=[]
+labels=[]
+
+#"'/Users/r17935avinash/Desktop/facerecog/Training PIcs/"
+
+def load_images_from_folder(folder):
+    images = []
+    tot_images=0
+    for filename in os.listdir(folder):
+        img = cv2.imread(os.path.join(folder,filename))
+        #print(filename)
+        if img is not None:
+            images.append(img)
+            tot_images=tot_images+1
+    return images,tot_images
+
+#sys.argv[1]="/Users/r17935avinash/Desktop/facerecog/Image recognition pics/"
+    #sys.argv[2]="/Users/r17935avinash/Desktop/facerecog/Image recognition results/"
+imgs,tot_images=load_images_from_folder(sys.argv[1])
+
+with open('/Users/r17935avinash/Desktop/facerecog/Amitabh/image_encodings','rb') as file1:
+    image_encoding=pickle.load(file1)
+    image_encoding=np.asarray(image_encoding)
+with open('/Users/r17935avinash/Desktop/facerecog/Amitabh/labels','rb') as file2:
+    labels=pickle.load(file2)  
+facecascade=cv2.CascadeClassifier("/Users/r17935avinash/anaconda3/pkgs/opencv3-3.1.0-py35_0/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml")
+
+for counter in range(tot_images):
+   img=imgs[counter]
+   imageblack=cv2.cvtColor(img, cv2.COLOR_RGB2GRAY )
+   faces=facecascade.detectMultiScale(imageblack,1.3,3)
+   for (x,y,w,h) in faces:
+       MIN=1;
+       encoding=face_recognition.face_encodings(img[y:y+h,x:x+w])
+       if not encoding :
+           continue
+       cv2.rectangle(imgs[counter],(x,y),(x+w,y+h),(0,255,0),3)
+       #print(encoding)
+       min_label=-1
+       for i in range(image_encoding.shape[0]):
+           if(np.sum((encoding-image_encoding[i])**2,-1)<MIN):
+               min_label=i;
+               MIN=np.sum((encoding-image_encoding[i])**2,-1)
+       #plt.imshow(img[y:y+h,x:x+w]);
+       plt.show()
+       cv2.putText(imgs[counter],labels[min_label], (x-10, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), lineType=2)
+   #plt.imshow(img)
+   cv2.imwrite(sys.argv[2]+"h"*(counter+1)+".jpg",img)
+
